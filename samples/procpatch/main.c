@@ -76,29 +76,35 @@ await_child(void) {
 
 int main() {
   app_info_t info;
-  pid_t child;
+  pid_t child = 0;
+  puts("procpatch main()");
 
   while(1) {
     if((child=await_child()) < 0) {
+      printf("bad pid %d\n", child);
       break;
     }
 
     if(pt_attach(child) < 0) {
+      perror("pt_attach");
       break;
     }
 
     memset(&info, 0, sizeof(info));
-    if(!sceKernelGetAppInfo(child, &info)) {
+    int32_t ret = sceKernelGetAppInfo(child, &info);
+    if(!ret) {
       patch_app(child, info.app_id, info.title_id);
     } else {
-      perror("sceKernelGetAppInfo");
+      printf("sceKernelGetAppInfo: failed with 0x%08x\n", ret);
     }
 
     if(pt_detach(child) < 0) {
+      puts("if(pt_detach(child) < 0)");
       break;
     }
 
 #ifdef TEST_RUN_ONCE
+    puts("#ifdef TEST_RUN_ONCE");
     break;
 #endif
   }

@@ -26,6 +26,64 @@ along with this program; see the file COPYING. If not, see
 #include "patch.h"
 #include "pt.h"
 
+#define MAX_HEX_DUMP_BYTES 2048
+
+// https://github.com/Cryptogenic/PS5-SELF-Decrypter/blob/def326f36c1f1b461030222daa9ea6124d4ce610/source/sbl.c#L25
+void hex_dump(const void *data, size_t size)
+{
+  if (size >= MAX_HEX_DUMP_BYTES)
+    return;
+  char hexbuf[MAX_HEX_DUMP_BYTES] = {0};
+  char *cur = hexbuf;
+#undef MAX_HEX_DUMP_BYTES
+  sprintf(cur, "hex:\n");
+  cur += strlen(cur);
+
+  char ascii[17] = {0};
+  size_t i, j;
+  for (i = 0; i < size; ++i)
+  {
+    sprintf(cur, "%02X ", ((unsigned char *)data)[i]);
+    cur += strlen(cur);
+
+    if (((unsigned char *)data)[i] >= ' ' && ((unsigned char *)data)[i] <= '~')
+    {
+      ascii[i % 16] = ((unsigned char *)data)[i];
+    }
+    else
+    {
+      ascii[i % 16] = '.';
+    }
+    if ((i + 1) % 8 == 0 || i + 1 == size)
+    {
+      sprintf(cur, " ");
+      cur += strlen(cur);
+
+      if ((i + 1) % 16 == 0)
+      {
+        sprintf(cur, "|  %s \n", ascii);
+        cur += strlen(cur);
+      }
+      else if (i + 1 == size)
+      {
+        ascii[(i + 1) % 16] = '\0';
+        if ((i + 1) % 16 <= 8)
+        {
+          sprintf(cur, " ");
+          cur += strlen(cur);
+        }
+        for (j = (i + 1) % 16; j < 16; ++j)
+        {
+          sprintf(cur, "   ");
+          cur += strlen(cur);
+        }
+        sprintf(cur, "|  %s \n", ascii);
+        cur += strlen(cur);
+      }
+    }
+  }
+  puts(hexbuf);
+}
 
 int
 patch_app(pid_t pid, uint32_t app_id, const char* title_id) {
@@ -51,14 +109,17 @@ patch_app(pid_t pid, uint32_t app_id, const char* title_id) {
     return -1;
   }
 
-  printf("  pid %d vm entry 0 starts at: 0x%lx\n", pid, ve.pve_start);
+  printf("  vm entry 0 starts at: 0x%lx ends at: 0x%lx size of vm 0x%lx bytes\n", ve.pve_start, ve.pve_end, len);
 
   if(mdbg_copyout(pid, ve.pve_start, buf, len)) {
+    perror("mdbg_copyout");
     free(buf);
     return -1;
   }
+  hex_dump(buf, 32);
 
   if(mdbg_copyin(pid, buf, ve.pve_start, len)) {
+    perror("mdbg_copyin");
     free(buf);
     return -1;
   }

@@ -50,6 +50,7 @@ jobs:
         make -C samples/ps
         make -C samples/ptrace_elfldr
         make -C samples/remount
+        make -C samples/procpatch
         bash samples/hello_cmake/build.sh
 
     - name: Upload SDK
