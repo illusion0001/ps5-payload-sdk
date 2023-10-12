@@ -96,9 +96,9 @@ typedef struct dynlib_obj {
   unsigned long unknown1;
   unsigned long unknown1size;
 
-  unsigned long entry;
-  unsigned long unknown2;
   unsigned long vaddrbase;
+  unsigned long unknown2;
+  unsigned long entry;
 
   unsigned int tlsindex;
   unsigned long tlsinit;
